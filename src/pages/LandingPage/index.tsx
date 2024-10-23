@@ -29,7 +29,7 @@ const LandingPage: React.FC = () => {
                 </div>
 
                 <Button asChild size="lg" className="w-full sm:w-auto">
-                    <Link to="/login" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105">
+                    <Link to={import.meta.env.VITE_LOGIN_SIGN_UP} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105">
                         Get Started
                     </Link>
                 </Button>

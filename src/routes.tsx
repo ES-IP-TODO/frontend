@@ -34,7 +34,7 @@ function ProtectedRoute({
 }
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
-// const RedirectPage = lazy(() => import('./pages/RedirectPage'));
+const RedirectPage = lazy(() => import('./pages/RedirectPage'));
 // const GeneralError = lazy(() => import('./pages/ErrorPages/GeneralError'));
 // const MaintenanceError = lazy(() => import('./pages/ErrorPages/MaintenanceError'));
 const NotFoundError = lazy(() => import('./pages/ErrorPages/NotFoundError'));
@@ -86,14 +86,14 @@ const routes = [
         ],
 
     },
-    // {
-    //     path: '/oauth2/idpresponse',
-    //     element: (
-    //         <Suspense fallback={<div>Loading...</div>}>
-    //             <RedirectPage />
-    //         </Suspense>
-    //     )
-    // }
+    {
+        path: '/oauth2/idpresponse',
+        element: (
+            <Suspense fallback={<div>Loading...</div>}>
+                <RedirectPage />
+            </Suspense>
+        )
+    }
 ];
 
 export { routes };
