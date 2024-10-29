@@ -1,46 +1,47 @@
 import { Loader2, LogIn } from "lucide-react";
-
+import { useEffect } from "react";
 // login/register imports
-// import { UserService } from "@/services/Client/UserService";
-// import { useUserStore } from "@/stores/useUserStore";
-// import { useNavigate } from "react-router-dom";
+import { UserService } from "@/services/Client/UserService";
+import { useUserStore } from "@/stores/useUserStore";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 export default function RedirectPage() {
-    // const navigate = useNavigate();
+    const navigate = useNavigate();
 
-    // // Function to extract the code from the URL
-    // const getCodeFromUrl = () => {
-    //     const params = new URLSearchParams(window.location.search);
-    //     return params.get("code"); // Get the code from the URL
-    // };
+    // Function to extract the code from the URL
+    const getCodeFromUrl = () => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("code"); // Get the code from the URL
+    };
 
-    // const login = async (code: string) => {
-    //     const response = (await UserService.login(code)).data;
-    //     return response;
-    // };
+    const login = async (code: string) => {
+        const response = (await UserService.login(code)).data;
+        return response;
+    };
 
-    // const loginMutation = useMutation({
-    //     mutationFn: login,
-    //     onSuccess: (data) => {
-    //         console.log(data.token);
-    //         useUserStore.getState().login(data.token);
-    //         navigate('/'); // Redirect after successful login
-    //         // useUserStore.getState().setUserInformation(data.user);
-    //     },
-    //     onError: (error) => {
-    //         console.error("Login failed:", error);
-    //     }
-    // });
+    const loginMutation = useMutation({
+        mutationFn: login,
+        onSuccess: (data) => {
+            console.log(data.token);
+            useUserStore.getState().login(data.token);
+            navigate('/404'); // Redirect after successful login
+            // useUserStore.getState().setUserInformation(data.user);
+        },
+        onError: (error) => {
+            console.error("Login failed:", error);
+        }
+    });
 
-    // useEffect(() => {
-    //     const code = getCodeFromUrl(); // Extract the code from the URL
+    useEffect(() => {
+        const code = getCodeFromUrl(); // Extract the code from the URL
 
-    //     if (code) {
-    //         loginMutation.mutate(code.toString()); // Start the login process
-    //     } else {
-    //         console.error("No code found in the URL");
-    //     }
-    // }, []);
+        if (code) {
+            loginMutation.mutate(code.toString()); // Start the login process
+        } else {
+            console.error("No code found in the URL");
+        }
+    }, []);
 
     return (
         <div className="min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center p-4">
