@@ -1,34 +1,31 @@
 import { Button } from '@/components/ui/button'
-import { useUserStore } from '@/stores/useUserStore'
-import { useQuery } from '@tanstack/react-query'
 import { CheckCircle, Clock, ListTodo } from 'lucide-react'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
-import { UserService } from "../../services/Client/UserService"
 
 const LandingPage: React.FC = () => {
 
-    const { token, setUserInformation } = useUserStore();
+    // const { token, setUserInformation } = useUserStore();
 
-    console.log("Token acessado na LandingPage:", token); // Verifica se o token é acessado
+    // console.log("Token acessado na LandingPage:", token); // Verifica se o token é acessado
 
-    const fetchUser = async () => {
-        const response = await UserService.getUser();
-        return response.data;
-    }
+    // const fetchUser = async () => {
+    //     const response = await UserService.getUser();
+    //     return response.data;
+    // }
 
-    const { data } = useQuery({
-        queryKey: ["user"],
-        queryFn: fetchUser,
-        enabled: !!token,
-    })
+    // const { data } = useQuery({
+    //     queryKey: ["user"],
+    //     queryFn: fetchUser,
+    //     enabled: !!token,
+    // })
 
-    useEffect(() => {
-        console.log("Data do usuário:", data);
-        if (data && token) {
-            setUserInformation(data);
-        }
-    }, [data, setUserInformation, token]);
+    // useEffect(() => {
+    //     console.log("Data do usuário:", data);
+    //     if (data && token) {
+    //         setUserInformation(data);
+    //     }
+    // }, [data, setUserInformation, token]);
 
     return (
         <div className="min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center p-4">

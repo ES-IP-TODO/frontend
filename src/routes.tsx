@@ -1,7 +1,8 @@
-import { lazy, ReactNode, Suspense, useState } from 'react';
+import { lazy, ReactNode, Suspense, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { CleanLayout } from "./layouts/Layout";
-
+import TaskManagement from './pages/TaskManagementPage';
+import { useUserStore } from './stores/useUserStore';
 
 function ProtectedRoute({
     children,
@@ -14,21 +15,21 @@ function ProtectedRoute({
     redirect?: string;
 }) {
     const [isLoading, setIsLoading] = useState(true);
-    // const { token } = useUserStore((state: string) => state);
+    const { token } = useUserStore((state: string) => state);
 
-    // useEffect(() => {
-    //     setIsLoading(false);
-    // }, [token]);
+    useEffect(() => {
+        setIsLoading(false);
+    }, [token]);
 
     if (isLoading) {
         return <div>Loading...</div>;
     }
 
-    // if (loggedIn && !token) {
-    //     return <Navigate to={redirect} />;
-    // } else if (!loggedIn && token) {
-    //     return <Navigate to="/" />;
-    // }
+    if (loggedIn && !token) {
+        return <Navigate to={redirect} />;
+    } else if (!loggedIn && token) {
+        return <Navigate to="/" />;
+    }
 
     return children;
 }
@@ -82,6 +83,14 @@ const routes = [
             {
                 path: '*',
                 element: <Navigate to='/404' />,
+            },
+            {
+                path: '/my-tasks',
+                element: (
+                    <Suspense fallback={<div>Loading...</div>}>
+                        <TaskManagement />
+                    </Suspense>
+                ),
             }
         ],
 
