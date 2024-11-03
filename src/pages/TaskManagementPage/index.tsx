@@ -78,16 +78,64 @@ const TaskManagement: React.FC = () => {
             return 0;
         });
 
-    const onDragEnd = (result: any) => {
-        if (!result.destination) return;
+    const onDragEnd = (result) => {
+        const { source, destination } = result;
 
-        const newTasks = Array.from(tasks);
-        const [reorderedTask] = newTasks.splice(result.source.index, 1);
-        reorderedTask.status = result.destination.droppableId;
-        newTasks.splice(result.destination.index, 0, reorderedTask);
+        // Se não há destino, aborta o processo
+        if (!destination) return;
 
-        setTasks(newTasks);
+        // Se o item foi solto na mesma posição, não há mudanças
+        if (source.droppableId === destination.droppableId && source.index === destination.index) {
+            return;
+        }
+
+        // Copia as tarefas
+        const currentTasks = Array.from(tasks);
+
+        // Se o item foi solto na mesma coluna, apenas reordene dentro da mesma coluna
+        if (source.droppableId === destination.droppableId) {
+            const columnTasks = currentTasks.filter(task => task.status === source.droppableId);
+
+            // Remove o item da posição original
+            const [movedTask] = columnTasks.splice(source.index, 1);
+
+            // Insere o item na nova posição
+            columnTasks.splice(destination.index, 0, movedTask);
+
+            // Atualiza o estado com a nova lista reorganizada para essa coluna específica
+            const updatedTasks = [
+                ...currentTasks.filter(task => task.status !== source.droppableId),
+                ...columnTasks
+            ];
+
+            setTasks(updatedTasks);
+        } else {
+            // Se o item foi movido para outra coluna
+
+            // Tarefas filtradas por coluna de origem e destino
+            const sourceTasks = currentTasks.filter(task => task.status === source.droppableId);
+            const destinationTasks = currentTasks.filter(task => task.status === destination.droppableId);
+
+            // Remove o item da posição de origem
+            const [movedTask] = sourceTasks.splice(source.index, 1);
+
+            // Atualiza o status do item movido para a coluna de destino
+            movedTask.status = destination.droppableId;
+
+            // Insere o item na nova posição na coluna de destino
+            destinationTasks.splice(destination.index, 0, movedTask);
+
+            // Concatena as listas atualizadas com as tarefas de outras colunas não afetadas
+            const updatedTasks = [
+                ...currentTasks.filter(task => task.status !== source.droppableId && task.status !== destination.droppableId),
+                ...sourceTasks,
+                ...destinationTasks
+            ];
+
+            setTasks(updatedTasks);
+        }
     };
+
 
     const toggleTaskExpansion = (taskId: string) => {
         setExpandedTasks(prev =>
