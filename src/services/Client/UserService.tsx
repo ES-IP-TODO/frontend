@@ -5,13 +5,14 @@ const client = createClient(config.API_USER_URL);
 
 const UserService = {
     async login(code: string) {
-        return client.post('/sign-in?code=' + code);
+        return client.post("/sign-in?code=" + code);
     },
-    // async logout() {
-    //     return client.post('/auth/sign-out');
-    // },
+    async logout() {
+        return client.get("/logout");
+    },
     async getUser() {
-        return client.get('/me');
-    }
-}
+        return client.get("/me");
+    },
+};
+
 export { UserService };

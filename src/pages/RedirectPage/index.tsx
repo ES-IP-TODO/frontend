@@ -25,7 +25,7 @@ export default function RedirectPage() {
         onSuccess: (data) => {
             console.log(data.token);
             useUserStore.getState().login(data.token);
-            navigate('/404'); // Redirect after successful login
+            navigate('/my-tasks'); // Redirect after successful login
             // useUserStore.getState().setUserInformation(data.user);
         },
         onError: (error) => {

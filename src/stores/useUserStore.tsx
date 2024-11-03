@@ -45,7 +45,7 @@ export const useUserStore = create<UserState & UserActions>((set) => ({
             updatedAt: data.updated_at
         });
     },
-    logout: (navigate: NavigateFunction) => {
+    logout: () => {
         set({
             token: '',
             givenName: '',
@@ -56,6 +56,5 @@ export const useUserStore = create<UserState & UserActions>((set) => ({
             isActive: false,
             updatedAt: '',
         });
-        navigate('/');
     },
 }));
