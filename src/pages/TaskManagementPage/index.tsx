@@ -7,7 +7,7 @@ import { UserService } from '@/services/Client/UserService';
 import { useUserStore } from '@/stores/useUserStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { GripVertical, LogOut, Plus } from 'lucide-react';
+import { Edit, Eye, GripVertical, LogOut, Plus, Trash } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
@@ -78,6 +78,12 @@ const TaskManagement: React.FC = () => {
         }
     };
 
+    const handleDeleteTask = (id: string) => {
+        if (confirm("Are you sure you want to delete this task?")) {
+            deleteTaskMutation.mutate(id);
+        }
+    };
+
     const updateTaskMutation = useMutation({
         mutationFn: async ({ id, newStatus }) => {
             await TaskService.updateTask(id, { status: newStatus });
@@ -108,6 +114,35 @@ const TaskManagement: React.FC = () => {
             queryClient.invalidateQueries("tasks");
         },
     });
+
+    const deleteTaskMutation = useMutation({
+        mutationFn: async (id: string) => {
+            await TaskService.deleteTask(id);
+        },
+        onMutate: async (id: string) => {
+            await queryClient.cancelQueries("tasks");
+
+            // Snapshot da lista atual de tarefas
+            const previousTasks = queryClient.getQueryData(["tasks"]);
+
+            // Remove a tarefa otimisticamente
+            queryClient.setQueryData(["tasks"], (oldTasks: any) =>
+                oldTasks.filter((task: any) => task.id !== id)
+            );
+
+            return { previousTasks };
+        },
+        onError: (error, id, context) => {
+            if (context?.previousTasks) {
+                queryClient.setQueryData(["tasks"], context.previousTasks);
+            }
+            console.error("Failed to delete task:", error);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries("tasks");
+        },
+    });
+
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -191,8 +226,8 @@ const TaskManagement: React.FC = () => {
                                                                 </p>
                                                                 <div className="flex justify-between items-center text-sm mb-2">
                                                                     <span className={`px-3 py-1 rounded-full ${task.priority === 'high' ? 'bg-red-200 text-red-800' :
-                                                                            task.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                                                                                'bg-green-200 text-green-800'
+                                                                        task.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                                                                            'bg-green-200 text-green-800'
                                                                         }`}>
                                                                         {task.priority}
                                                                     </span>
@@ -200,6 +235,20 @@ const TaskManagement: React.FC = () => {
                                                                 </div>
                                                                 <div className="text-sm text-gray-500 mb-4">
                                                                     Created on: {format(new Date(task.created_at), 'PPP p')}
+                                                                </div>
+                                                                <div className="flex justify-end gap-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                    >
+                                                                        <Eye className="w-4 h-4 mr-2" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="sm">
+                                                                        <Edit className="w-4 h-4" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
+                                                                        <Trash className="w-4 h-4" />
+                                                                    </Button>
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
@@ -224,6 +273,7 @@ const TaskManagement: React.FC = () => {
                                 <TableHead>Deadline</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Creation Date</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -235,6 +285,22 @@ const TaskManagement: React.FC = () => {
                                     <TableCell>{format(new Date(task.deadline), 'PPP p')}</TableCell>
                                     <TableCell>{getStatusBadge(task.status)}</TableCell>
                                     <TableCell>{format(new Date(task.created_at), 'PPP p')}</TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm">
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
+                                                <Trash className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

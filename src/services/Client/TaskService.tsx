@@ -21,6 +21,9 @@ const TaskService = {
         console.log(task);
         return client.put(`/${id}`, task);
     },
+    async deleteTask(id: string) {
+        return client.delete(`/${id}`);
+    },
 };
 
 export { TaskService };
