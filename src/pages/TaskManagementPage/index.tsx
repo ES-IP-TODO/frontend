@@ -1,13 +1,20 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TaskService } from '@/services/Client/TaskService';
 import { UserService } from '@/services/Client/UserService';
 import { useUserStore } from '@/stores/useUserStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Edit, Eye, GripVertical, LogOut, Plus, Trash } from 'lucide-react';
+import { ArrowUpDown, Edit, Eye, GripVertical, LogOut, Plus, Trash } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +26,9 @@ const TaskManagement: React.FC = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const queryClient = useQueryClient();
+    const [sortBy, setSortBy] = useState('creationTime');
+    const [sortOrder, setSortOrder] = useState('asc');
+    const [filterBy, setFilterBy] = useState('all');
 
     const fetchTasks = async () => {
         const response = await TaskService.getTasks();
@@ -158,6 +168,46 @@ const TaskManagement: React.FC = () => {
         }
     };
 
+    const sortTasks = (tasksToSort) => {
+        let sortedTasks = [...tasksToSort];
+        switch (sortBy) {
+            case 'creationTime':
+                sortedTasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                break;
+            case 'deadline':
+                sortedTasks.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+                break;
+            case 'completionStatus':
+                const statusOrder = { 'todo': 0, 'in-progress': 1, 'done': 2 };
+                sortedTasks.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+                break;
+            default:
+                break;
+        }
+        return sortOrder === 'desc' ? sortedTasks.reverse() : sortedTasks;
+    };
+
+    const filterTasks = (tasksToFilter) => {
+        switch (filterBy) {
+            case 'todo':
+                return tasksToFilter.filter(task => task.status === 'todo');
+            case 'inProgress':
+                return tasksToFilter.filter(task => task.status === 'in-progress');
+            case 'done':
+                return tasksToFilter.filter(task => task.status === 'done');
+            case 'highPriority':
+                return tasksToFilter.filter(task => task.priority === 'high');
+            case 'mediumPriority':
+                return tasksToFilter.filter(task => task.priority === 'medium');
+            case 'lowPriority':
+                return tasksToFilter.filter(task => task.priority === 'low');
+            default:
+                return tasksToFilter;
+        }
+    };
+
+    const sortedAndFilteredTasks = sortTasks(filterTasks(tasks || []));
+
     const onDragEnd = (result) => {
         const { source, destination } = result;
 
@@ -266,6 +316,43 @@ const TaskManagement: React.FC = () => {
                     </div>
                 </DragDropContext>
 
+                <div className="flex justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                        <Select onValueChange={setSortBy} defaultValue={sortBy}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="creationTime">Creation Time</SelectItem>
+                                <SelectItem value="deadline">Deadline</SelectItem>
+                                <SelectItem value="completionStatus">Completion Status</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        >
+                            <ArrowUpDown className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <Select onValueChange={setFilterBy} defaultValue={filterBy}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All</SelectItem>
+                            <SelectItem value="todo">To Do</SelectItem>
+                            <SelectItem value="inProgress">In Progress</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                            <SelectItem value="highPriority">High Priority</SelectItem>
+                            <SelectItem value="mediumPriority">Medium Priority</SelectItem>
+                            <SelectItem value="lowPriority">Low Priority</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
                 <div className="bg-white rounded-lg shadow p-6">
                     <Table>
                         <TableHeader>
@@ -280,7 +367,7 @@ const TaskManagement: React.FC = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {(tasks || []).map(task => (
+                            {sortedAndFilteredTasks.map(task => (
                                 <TableRow key={task.id}>
                                     <TableCell>{task.title.length > 30 ? `${task.title.slice(0, 30)}...` : task.title}</TableCell>
                                     <TableCell>{task.description.length > 30 ? `${task.description.slice(0, 30)}...` : task.description}</TableCell>
