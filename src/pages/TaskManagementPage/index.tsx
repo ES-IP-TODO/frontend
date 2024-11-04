@@ -1,41 +1,53 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TaskService } from '@/services/Client/TaskService';
 import { UserService } from '@/services/Client/UserService';
 import { useUserStore } from '@/stores/useUserStore';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Eye, GripVertical, LogOut } from 'lucide-react';
+import { format } from 'date-fns';
+import { Edit, Eye, GripVertical, LogOut, Plus, Trash } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
+import NewTaskModal from './components/NewTaskModal';
 
 const TaskManagement: React.FC = () => {
     const { token, givenName, familyName, setUserInformation, logout: zustandLogout } = useUserStore();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
-    console.log("Token accessed in TaskManagement:", token); // Check if the token is accessed
+    // Função para buscar as tarefas
+    const fetchTasks = async () => {
+        const response = await TaskService.getTasks();
+        return response.data;
+    };
+
+    // Configuração da consulta de tarefas usando react-query
+    const { data: tasks, refetch } = useQuery({
+        queryKey: ["tasks"],
+        queryFn: fetchTasks,
+        enabled: !!token,
+    });
 
     const fetchUser = async () => {
         const response = await UserService.getUser();
         return response.data;
     };
 
-    const { data } = useQuery({
+    const { data: userData } = useQuery({
         queryKey: ["user"],
         queryFn: fetchUser,
         enabled: !!token,
     });
 
     useEffect(() => {
-        console.log("User data:", data);
-        if (data && token) {
-            setUserInformation(data);
+        if (userData && token) {
+            setUserInformation(userData);
             setLoading(false);
         }
-    }, [data, setUserInformation, token]);
+    }, [userData, setUserInformation, token]);
 
     const logout = async () => {
         const response = await UserService.logout();
@@ -44,8 +56,7 @@ const TaskManagement: React.FC = () => {
 
     const logoutMutation = useMutation({
         mutationFn: logout,
-        onSuccess: (data) => {
-            console.log(data);
+        onSuccess: () => {
             zustandLogout();
             navigate('/');
         },
@@ -58,89 +69,18 @@ const TaskManagement: React.FC = () => {
         logoutMutation.mutate();
     };
 
-    const [tasks, setTasks] = useState([
-        { id: '1', name: "Create presentation", description: "Prepare slides for the meeting", priority: "high", deadline: "2024-03-15", status: "todo", createdAt: "2024-03-01" },
-        { id: '2', name: "Review code", description: "Code review for PR #123", priority: "medium", deadline: "2024-03-10", status: "in-progress", createdAt: "2024-03-02" },
-        { id: '3', name: "Update documentation", description: "Update project README", priority: "low", deadline: "2024-03-20", status: "done", createdAt: "2024-03-03" },
-    ]);
+    // const [sortBy, setSortBy] = useState("");
+    // const [filterBy, setFilterBy] = useState("");
 
-    const [sortBy, setSortBy] = useState("");
-    const [filterBy, setFilterBy] = useState("");
-    const [expandedTasks, setExpandedTasks] = useState<string[]>([]);
-
-    const sortedAndFilteredTasks = tasks
-        .filter(task => filterBy === "" || task.priority === filterBy)
-        .sort((a, b) => {
-            if (sortBy === "name") return a.name.localeCompare(b.name);
-            if (sortBy === "priority") return a.priority.localeCompare(b.priority);
-            if (sortBy === "deadline") return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-            if (sortBy === "createdAt") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            return 0;
-        });
-
-    const onDragEnd = (result) => {
-        const { source, destination } = result;
-
-        // Se não há destino, aborta o processo
-        if (!destination) return;
-
-        // Se o item foi solto na mesma posição, não há mudanças
-        if (source.droppableId === destination.droppableId && source.index === destination.index) {
-            return;
+    // Função para adicionar uma nova tarefa e atualizar o estado
+    const handleAddTask = async (task) => {
+        try {
+            const response = await TaskService.createTask(task);
+            console.log("New task added:", response.data);
+            refetch(); // Refetch para atualizar a lista com a nova tarefa
+        } catch (error) {
+            console.error("Failed to add task:", error);
         }
-
-        // Copia as tarefas
-        const currentTasks = Array.from(tasks);
-
-        // Se o item foi solto na mesma coluna, apenas reordene dentro da mesma coluna
-        if (source.droppableId === destination.droppableId) {
-            const columnTasks = currentTasks.filter(task => task.status === source.droppableId);
-
-            // Remove o item da posição original
-            const [movedTask] = columnTasks.splice(source.index, 1);
-
-            // Insere o item na nova posição
-            columnTasks.splice(destination.index, 0, movedTask);
-
-            // Atualiza o estado com a nova lista reorganizada para essa coluna específica
-            const updatedTasks = [
-                ...currentTasks.filter(task => task.status !== source.droppableId),
-                ...columnTasks
-            ];
-
-            setTasks(updatedTasks);
-        } else {
-            // Se o item foi movido para outra coluna
-
-            // Tarefas filtradas por coluna de origem e destino
-            const sourceTasks = currentTasks.filter(task => task.status === source.droppableId);
-            const destinationTasks = currentTasks.filter(task => task.status === destination.droppableId);
-
-            // Remove o item da posição de origem
-            const [movedTask] = sourceTasks.splice(source.index, 1);
-
-            // Atualiza o status do item movido para a coluna de destino
-            movedTask.status = destination.droppableId;
-
-            // Insere o item na nova posição na coluna de destino
-            destinationTasks.splice(destination.index, 0, movedTask);
-
-            // Concatena as listas atualizadas com as tarefas de outras colunas não afetadas
-            const updatedTasks = [
-                ...currentTasks.filter(task => task.status !== source.droppableId && task.status !== destination.droppableId),
-                ...sourceTasks,
-                ...destinationTasks
-            ];
-
-            setTasks(updatedTasks);
-        }
-    };
-
-
-    const toggleTaskExpansion = (taskId: string) => {
-        setExpandedTasks(prev =>
-            prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
-        );
     };
 
     const getStatusBadge = (status: string) => {
@@ -160,9 +100,20 @@ const TaskManagement: React.FC = () => {
         return <div>Loading...</div>; // Render a loading indicator while fetching user data
     }
 
+    // // Filtragem e ordenação de tarefas
+    // const sortedAndFilteredTasks = (tasks || [])
+    //     .filter(task => filterBy === "" || task.priority === filterBy)
+    //     .sort((a, b) => {
+    //         if (sortBy === "name") return a.name.localeCompare(b.name);
+    //         if (sortBy === "priority") return a.priority.localeCompare(b.priority);
+    //         if (sortBy === "deadline") return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    //         if (sortBy === "createdAt") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    //         return 0;
+    //     });
+
     return (
         <div className="min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 p-6">
-            <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-2xl p-6">
+            <div className="max-w-7.5xl mx-auto bg-white rounded-xl shadow-2xl p-6">
                 <header className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-gray-800">Hello, {givenName} {familyName}</h1>
                     <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2">
@@ -170,7 +121,14 @@ const TaskManagement: React.FC = () => {
                     </Button>
                 </header>
 
-                <DragDropContext onDragEnd={onDragEnd}>
+                <NewTaskModal onAddTask={handleAddTask}>
+                    <Button className="flex items-center gap-2 mb-6">
+                        <Plus className="w-4 h-4" /> New Task
+                    </Button>
+                </NewTaskModal>
+
+                {/* Renderização das tarefas utilizando Drag and Drop */}
+                <DragDropContext onDragEnd={(result) => {/* Implementar lógica de drag and drop, se necessário */ }}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         {["todo", "in-progress", "done"].map((column) => (
                             <Droppable key={column} droppableId={column}>
@@ -183,7 +141,7 @@ const TaskManagement: React.FC = () => {
                                         <h2 className="text-xl font-semibold mb-4">
                                             {column === "todo" ? "To Do" : column === "in-progress" ? "In Progress" : "Done"}
                                         </h2>
-                                        {tasks
+                                        {(tasks || [])
                                             .filter(task => task.status === column)
                                             .map((task, index) => (
                                                 <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -196,15 +154,13 @@ const TaskManagement: React.FC = () => {
                                                         >
                                                             <CardHeader>
                                                                 <div className="flex justify-between items-center">
-                                                                    <CardTitle className="text-lg">{task.name}</CardTitle>
+                                                                    <CardTitle className="text-lg">{task.title.length > 30 ? `${task.title.slice(0, 30)}...` : task.title}</CardTitle>
                                                                     <GripVertical className="w-5 h-5 text-gray-500" />
                                                                 </div>
                                                             </CardHeader>
                                                             <CardContent>
                                                                 <p className="text-sm text-gray-600 mb-2">
-                                                                    {expandedTasks.includes(task.id)
-                                                                        ? task.description
-                                                                        : `${task.description.slice(0, 50)}...`}
+                                                                    {task.description.length > 30 ? `${task.description.slice(0, 30)}...` : task.description}
                                                                 </p>
                                                                 <div className="flex justify-between items-center text-sm mb-2">
                                                                     <span className={`px-3 py-1 rounded-full ${task.priority === 'high' ? 'bg-red-200 text-red-800' :
@@ -213,22 +169,24 @@ const TaskManagement: React.FC = () => {
                                                                         }`}>
                                                                         {task.priority}
                                                                     </span>
-                                                                    <span>Deadline: {task.deadline}</span>
+                                                                    <span>Deadline: {format(new Date(task.deadline), 'PPP p')}</span>
                                                                 </div>
                                                                 <div className="text-sm text-gray-500 mb-4">
-                                                                    Created on: {task.createdAt}
+                                                                    Created on: {format(new Date(task.created_at), 'PPP p')}
                                                                 </div>
                                                                 <div className="flex justify-end gap-2">
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        onClick={() => toggleTaskExpansion(task.id)}
                                                                     >
                                                                         <Eye className="w-4 h-4 mr-2" />
-                                                                        {expandedTasks.includes(task.id) ? 'Collapse' : 'Expand'}
                                                                     </Button>
-                                                                    <Button variant="outline" size="sm">Edit</Button>
-                                                                    <Button variant="destructive" size="sm">Delete</Button>
+                                                                    <Button variant="ghost" size="sm">
+                                                                        <Edit className="w-4 h-4" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="sm">
+                                                                        <Trash className="w-4 h-4" />
+                                                                    </Button>
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
@@ -243,36 +201,7 @@ const TaskManagement: React.FC = () => {
                     </div>
                 </DragDropContext>
 
-                <div className="flex justify-between items-start mb-6">
-                    <div className="flex-1">
-                        <h2 className="text-2xl font-bold mb-4">All Tasks</h2>
-                    </div>
-                    <div className="flex gap-2">
-                        <Select onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Sort By" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="name">Name</SelectItem>
-                                <SelectItem value="priority">Priority</SelectItem>
-                                <SelectItem value="deadline">Deadline</SelectItem>
-                                <SelectItem value="createdAt">Creation Date</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select onValueChange={setFilterBy}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter By" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="high">High Priority</SelectItem>
-                                <SelectItem value="medium">Medium Priority</SelectItem>
-                                <SelectItem value="low">Low Priority</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
+                {/* Tabela de Tarefas */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <Table>
                         <TableHeader>
@@ -287,18 +216,10 @@ const TaskManagement: React.FC = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedAndFilteredTasks.map(task => (
+                            {(tasks || []).map(task => (
                                 <TableRow key={task.id}>
-                                    <TableCell>{task.name}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center">
-                                            <span className="mr-2">
-                                                {expandedTasks.includes(task.id)
-                                                    ? task.description
-                                                    : `${task.description.slice(0, 30)}...`}
-                                            </span>
-                                        </div>
-                                    </TableCell>
+                                    <TableCell>{task.title.length > 30 ? `${task.title.slice(0, 30)}...` : task.title}</TableCell>
+                                    <TableCell>{task.description.length > 30 ? `${task.description.slice(0, 30)}...` : task.description}</TableCell>
                                     <TableCell>
                                         <span className={`px-3 py-1 rounded-full ${task.priority === 'high' ? 'bg-red-200 text-red-800' :
                                             task.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
@@ -307,20 +228,23 @@ const TaskManagement: React.FC = () => {
                                             {task.priority}
                                         </span>
                                     </TableCell>
-                                    <TableCell>{task.deadline}</TableCell>
+                                    <TableCell>{format(new Date(task.deadline), 'PPP p')}</TableCell>
                                     <TableCell>{getStatusBadge(task.status)}</TableCell>
-                                    <TableCell>{task.createdAt}</TableCell>
+                                    <TableCell>{format(new Date(task.created_at), 'PPP p')}</TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => toggleTaskExpansion(task.id)}
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="outline" size="sm">Edit</Button>
-                                            <Button variant="destructive" size="sm">Delete</Button>
+                                            <Button variant="ghost" size="sm">
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm">
+                                                <Trash className="w-4 h-4" />
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>

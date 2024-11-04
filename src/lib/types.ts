@@ -7,3 +7,10 @@ export interface UserResponse {
     isActive: boolean;
     updatedAt: string;
 }
+
+export interface TaskPost {
+    name: string;
+    description: string;
+    deadline: string;
+    priority: string;
+}
