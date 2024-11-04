@@ -16,7 +16,7 @@ export interface TaskPost {
 }
 
 export interface TaskUpdate {
-    name?: string;
+    title?: string;
     description?: string;
     deadline?: string;
     priority?: string;
