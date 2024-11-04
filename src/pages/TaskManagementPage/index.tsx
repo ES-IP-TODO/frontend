@@ -11,6 +11,7 @@ import { Edit, Eye, GripVertical, LogOut, Plus, Trash } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
+import EditTaskModal from './components/EditTaskModal';
 import NewTaskModal from './components/NewTaskModal';
 
 const TaskManagement: React.FC = () => {
@@ -243,9 +244,11 @@ const TaskManagement: React.FC = () => {
                                                                     >
                                                                         <Eye className="w-4 h-4 mr-2" />
                                                                     </Button>
-                                                                    <Button variant="ghost" size="sm">
-                                                                        <Edit className="w-4 h-4" />
-                                                                    </Button>
+                                                                    <EditTaskModal task={task}>
+                                                                        <Button variant="ghost" size="sm">
+                                                                            <Edit className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </EditTaskModal>
                                                                     <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
                                                                         <Trash className="w-4 h-4" />
                                                                     </Button>
@@ -293,9 +296,11 @@ const TaskManagement: React.FC = () => {
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="sm">
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
+                                            <EditTaskModal task={task}>
+                                                <Button variant="ghost" size="sm">
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                            </EditTaskModal>
                                             <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
                                                 <Trash className="w-4 h-4" />
                                             </Button>
