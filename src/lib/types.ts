@@ -14,3 +14,11 @@ export interface TaskPost {
     deadline: string;
     priority: string;
 }
+
+export interface TaskUpdate {
+    name?: string;
+    description?: string;
+    deadline?: string;
+    priority?: string;
+    status?: "todo" | "in-progress" | "done";
+}

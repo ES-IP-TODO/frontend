@@ -5,9 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TaskService } from '@/services/Client/TaskService';
 import { UserService } from '@/services/Client/UserService';
 import { useUserStore } from '@/stores/useUserStore';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Edit, Eye, GripVertical, LogOut, Plus, Trash } from 'lucide-react';
+import { GripVertical, LogOut, Plus } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
@@ -17,14 +17,13 @@ const TaskManagement: React.FC = () => {
     const { token, givenName, familyName, setUserInformation, logout: zustandLogout } = useUserStore();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
-    // Função para buscar as tarefas
     const fetchTasks = async () => {
         const response = await TaskService.getTasks();
         return response.data;
     };
 
-    // Configuração da consulta de tarefas usando react-query
     const { data: tasks, refetch } = useQuery({
         queryKey: ["tasks"],
         queryFn: fetchTasks,
@@ -69,19 +68,46 @@ const TaskManagement: React.FC = () => {
         logoutMutation.mutate();
     };
 
-    // const [sortBy, setSortBy] = useState("");
-    // const [filterBy, setFilterBy] = useState("");
-
-    // Função para adicionar uma nova tarefa e atualizar o estado
     const handleAddTask = async (task) => {
         try {
             const response = await TaskService.createTask(task);
             console.log("New task added:", response.data);
-            refetch(); // Refetch para atualizar a lista com a nova tarefa
+            refetch();
         } catch (error) {
             console.error("Failed to add task:", error);
         }
     };
+
+    const updateTaskMutation = useMutation({
+        mutationFn: async ({ id, newStatus }) => {
+            await TaskService.updateTask(id, { status: newStatus });
+        },
+        onMutate: async ({ id, newStatus }) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries("tasks");
+
+            // Snapshot the previous value
+            const previousTasks = queryClient.getQueryData(["tasks"]);
+
+            // Optimistically update to the new value
+            queryClient.setQueryData(["tasks"], old => {
+                return old.map(task =>
+                    task.id === id ? { ...task, status: newStatus } : task
+                );
+            });
+
+            // Return a context object with the snapshotted value
+            return { previousTasks };
+        },
+        onError: (err, newTodo, context) => {
+            // If the mutation fails, use the context returned from onMutate to roll back
+            queryClient.setQueryData(["tasks"], context.previousTasks);
+        },
+        onSettled: () => {
+            // Always refetch after error or success
+            queryClient.invalidateQueries("tasks");
+        },
+    });
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -96,20 +122,22 @@ const TaskManagement: React.FC = () => {
         }
     };
 
-    if (loading) {
-        return <div>Loading...</div>; // Render a loading indicator while fetching user data
-    }
+    const onDragEnd = (result) => {
+        const { source, destination } = result;
 
-    // // Filtragem e ordenação de tarefas
-    // const sortedAndFilteredTasks = (tasks || [])
-    //     .filter(task => filterBy === "" || task.priority === filterBy)
-    //     .sort((a, b) => {
-    //         if (sortBy === "name") return a.name.localeCompare(b.name);
-    //         if (sortBy === "priority") return a.priority.localeCompare(b.priority);
-    //         if (sortBy === "deadline") return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-    //         if (sortBy === "createdAt") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    //         return 0;
-    //     });
+        if (!destination) return;
+
+        const taskId = result.draggableId;
+        const newStatus = destination.droppableId;
+
+        if (source.droppableId !== newStatus) {
+            updateTaskMutation.mutate({ id: taskId, newStatus });
+        }
+    };
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 p-6">
@@ -127,8 +155,7 @@ const TaskManagement: React.FC = () => {
                     </Button>
                 </NewTaskModal>
 
-                {/* Renderização das tarefas utilizando Drag and Drop */}
-                <DragDropContext onDragEnd={(result) => {/* Implementar lógica de drag and drop, se necessário */ }}>
+                <DragDropContext onDragEnd={onDragEnd}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         {["todo", "in-progress", "done"].map((column) => (
                             <Droppable key={column} droppableId={column}>
@@ -164,8 +191,8 @@ const TaskManagement: React.FC = () => {
                                                                 </p>
                                                                 <div className="flex justify-between items-center text-sm mb-2">
                                                                     <span className={`px-3 py-1 rounded-full ${task.priority === 'high' ? 'bg-red-200 text-red-800' :
-                                                                        task.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                                                                            'bg-green-200 text-green-800'
+                                                                            task.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                                                                                'bg-green-200 text-green-800'
                                                                         }`}>
                                                                         {task.priority}
                                                                     </span>
@@ -173,20 +200,6 @@ const TaskManagement: React.FC = () => {
                                                                 </div>
                                                                 <div className="text-sm text-gray-500 mb-4">
                                                                     Created on: {format(new Date(task.created_at), 'PPP p')}
-                                                                </div>
-                                                                <div className="flex justify-end gap-2">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                    >
-                                                                        <Eye className="w-4 h-4 mr-2" />
-                                                                    </Button>
-                                                                    <Button variant="ghost" size="sm">
-                                                                        <Edit className="w-4 h-4" />
-                                                                    </Button>
-                                                                    <Button variant="ghost" size="sm">
-                                                                        <Trash className="w-4 h-4" />
-                                                                    </Button>
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
@@ -201,7 +214,6 @@ const TaskManagement: React.FC = () => {
                     </div>
                 </DragDropContext>
 
-                {/* Tabela de Tarefas */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <Table>
                         <TableHeader>
@@ -212,7 +224,6 @@ const TaskManagement: React.FC = () => {
                                 <TableHead>Deadline</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Creation Date</TableHead>
-                                <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -220,33 +231,10 @@ const TaskManagement: React.FC = () => {
                                 <TableRow key={task.id}>
                                     <TableCell>{task.title.length > 30 ? `${task.title.slice(0, 30)}...` : task.title}</TableCell>
                                     <TableCell>{task.description.length > 30 ? `${task.description.slice(0, 30)}...` : task.description}</TableCell>
-                                    <TableCell>
-                                        <span className={`px-3 py-1 rounded-full ${task.priority === 'high' ? 'bg-red-200 text-red-800' :
-                                            task.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                                                'bg-green-200 text-green-800'
-                                            }`}>
-                                            {task.priority}
-                                        </span>
-                                    </TableCell>
+                                    <TableCell>{task.priority}</TableCell>
                                     <TableCell>{format(new Date(task.deadline), 'PPP p')}</TableCell>
                                     <TableCell>{getStatusBadge(task.status)}</TableCell>
                                     <TableCell>{format(new Date(task.created_at), 'PPP p')}</TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="sm">
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="sm">
-                                                <Trash className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
