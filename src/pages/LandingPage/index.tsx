@@ -52,7 +52,7 @@ const LandingPage: React.FC = () => {
                 </div>
 
                 <Button asChild size="lg" className="w-full sm:w-auto">
-                    <Link to={import.meta.env.VITE_LOGIN_SIGN_UP} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105">
+                    <Link to="https://443370720777-es-ip-user-pool.auth.eu-north-1.amazoncognito.com/oauth2/authorize?client_id=5n4toi4opqib8uks7podp17gd8&response_type=code&scope=aws.cognito.signin.user.admin+email+openid+phone&redirect_uri=https%3A%2F%2Fload-balancer-iap-690512408.eu-north-1.elb.amazonaws.com%2Foauth2%2Fidpresponse" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105">
                         Get Started
                     </Link>
                 </Button>
