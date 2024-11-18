@@ -4,7 +4,7 @@ const scheme = {
     HTTPS: 'https://',
 };
 if (import.meta.env.PROD) {
-    HOST = 'www.google.com';
+    HOST = 'load-balancer-iap-690512408.eu-north-1.elb.amazonaws.com:444';
     BASE_URL = `${scheme.HTTPS}${HOST}`;
 } else {
     HOST = 'localhost';
