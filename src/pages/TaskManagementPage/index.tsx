@@ -20,6 +20,7 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import EditTaskModal from './components/EditTaskModal';
 import NewTaskModal from './components/NewTaskModal';
+import TaskDetailsModal from "./components/TaskDetailsModal";
 
 const TaskManagement: React.FC = () => {
     const { token, givenName, familyName, setUserInformation, logout: zustandLogout } = useUserStore();
@@ -288,12 +289,14 @@ const TaskManagement: React.FC = () => {
                                                                     Created on: {format(new Date(task.created_at), 'PPP p')}
                                                                 </div>
                                                                 <div className="flex justify-end gap-2">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                    >
-                                                                        <Eye className="w-4 h-4 mr-2" />
-                                                                    </Button>
+                                                                    <TaskDetailsModal task={task}>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                        >
+                                                                            <Eye className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </TaskDetailsModal>
                                                                     <EditTaskModal task={task}>
                                                                         <Button variant="ghost" size="sm">
                                                                             <Edit className="w-4 h-4" />
@@ -377,12 +380,14 @@ const TaskManagement: React.FC = () => {
                                     <TableCell>{format(new Date(task.created_at), 'PPP p')}</TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
+                                            <TaskDetailsModal task={task}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
+                                            </TaskDetailsModal>
                                             <EditTaskModal task={task}>
                                                 <Button variant="ghost" size="sm">
                                                     <Edit className="w-4 h-4" />
