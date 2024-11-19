@@ -5,14 +5,13 @@ const scheme = {
     HTTPS: "https://",
 };
 
-HOST = 'es-ua.ddns.net';
-BASE_URL = `${scheme.HTTPS}${HOST}`;
+const HOST = 'es-ua.ddns.net';
+const BASE_URL = `${scheme.HTTPS}${HOST}`;
 
 const config = {
     PRODUCTION: import.meta.env.PROD,
     HOST,
     BASE_URL,
-    API_USER_URL: `${BASE_URL}/api/auth`,
-    API_TASK_URL: `${BASE_URL}/api/tasks`,
+    API_URL: `${BASE_URL}/api`,
 };
 export default config;
