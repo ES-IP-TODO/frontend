@@ -4,7 +4,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routes } from "./routes";
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 // import { refreshToken } from "@/services/Client/client";
 import { Toaster } from './components/ui/toaster';
 
@@ -18,7 +17,6 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
-        <ReactQueryDevtools />
         <RouterProvider router={router} />
         <Toaster />
       </QueryClientProvider>
