@@ -5,8 +5,8 @@ const scheme = {
     HTTPS: "https://",
 };
 
-const HOST = 'es-ua.ddns.net';
-const BASE_URL = `${scheme.HTTPS}${HOST}`;
+HOST = 'es-ua.ddns.net';
+BASE_URL = `${scheme.HTTPS}${HOST}`;
 
 const config = {
     PRODUCTION: import.meta.env.PROD,
