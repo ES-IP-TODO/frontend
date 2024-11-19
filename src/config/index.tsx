@@ -5,14 +5,14 @@ const scheme = {
     HTTPS: "https://",
 };
 
-HOST = 'load-balancer-iap-690512408.eu-north-1.elb.amazonaws.com:444';
+HOST = 'es-ua.ddns.net';
 BASE_URL = `${scheme.HTTPS}${HOST}`;
 
 const config = {
     PRODUCTION: import.meta.env.PROD,
     HOST,
     BASE_URL,
-    API_USER_URL: `${BASE_URL}/auth`,
+    API_USER_URL: `${BASE_URL}/api/auth`,
+    API_TASK_URL: `${BASE_URL}/api/tasks`,
 };
-
 export default config;
